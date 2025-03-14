@@ -23,7 +23,7 @@ func NewBalanceController(balanceService service.BalanceServiceInterface) *Balan
 }
 
 // GetBalance handles GET /user/{userId}/balance requests
-func (c *BalanceController) GetBalance(ctx *gin.Context) {
+func (ctrl *BalanceController) GetBalance(ctx *gin.Context) {
 	userIDStr := ctx.Param("userId")
 
 	// Parse and validate user ID
@@ -36,7 +36,7 @@ func (c *BalanceController) GetBalance(ctx *gin.Context) {
 	}
 
 	// Get user balance
-	balance, err := c.balanceService.GetUserBalance(userID)
+	balance, err := ctrl.balanceService.GetUserBalance(userID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			ctx.JSON(http.StatusNotFound, gin.H{

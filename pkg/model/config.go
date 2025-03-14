@@ -31,6 +31,10 @@ type Database struct {
 
 // App type holds application-specific configuration
 type App struct {
-	Port        string
-	Environment string
+	Port             string
+	Environment      string
+	AllowOrigins     string
+	AllowCredentials string
+	AllowHeaders     string
+	AllowMethods     string
 }

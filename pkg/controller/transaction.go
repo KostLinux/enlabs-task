@@ -26,7 +26,7 @@ func NewTransactionController(transactionService service.TransactionServiceInter
 }
 
 // CreateTransaction handles POST /user/{userId}/transaction requests
-func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
+func (ctrl *TransactionController) CreateTransaction(ctx *gin.Context) {
 	userIDStr := ctx.Param("userId")
 
 	// Parse and validate user ID
@@ -66,7 +66,7 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	}
 
 	// Process the transaction
-	response, err := c.transactionService.ProcessTransaction(userID, &req, string(sourceType))
+	response, err := ctrl.transactionService.ProcessTransaction(userID, &req, string(sourceType))
 
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

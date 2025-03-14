@@ -1,22 +1,24 @@
 package middleware
 
 import (
+	"enlabs-task/pkg/model"
+
 	"github.com/gin-gonic/gin"
 )
 
 // CORS middleware for handling Cross-Origin Resource Sharing
-func CORS() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Source-Type")
-		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+func CORS(config *model.Config) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		ctx.Header("Access-Control-Allow-Origin", config.App.AllowOrigins)
+		ctx.Header("Access-Control-Allow-Credentials", config.App.AllowCredentials)
+		ctx.Header("Access-Control-Allow-Headers", config.App.AllowHeaders)
+		ctx.Header("Access-Control-Allow-Methods", config.App.AllowMethods)
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+		if ctx.Request.Method == "OPTIONS" {
+			ctx.AbortWithStatus(204)
 			return
 		}
 
-		c.Next()
+		ctx.Next()
 	}
 }

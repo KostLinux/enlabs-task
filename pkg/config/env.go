@@ -7,14 +7,13 @@ import (
 	"time"
 )
 
-// NewConfig creates a new Config instance with values from environment variables
-func NewConfig() *model.Config {
+// New creates a new Config instance with values from environment variables
+func New() *model.Config {
 	return &model.Config{
 		Server: model.Server{
 			Port:         getEnv("API_PORT", "8080"),
 			ReadTimeout:  getDurationEnv("SERVER_READ_TIMEOUT", 10*time.Second),
 			WriteTimeout: getDurationEnv("SERVER_WRITE_TIMEOUT", 10*time.Second),
-			IdleTimeout:  getDurationEnv("SERVER_IDLE_TIMEOUT", 60*time.Second),
 		},
 
 		Database: model.Database{
@@ -29,8 +28,12 @@ func NewConfig() *model.Config {
 		},
 
 		App: model.App{
-			Port:        getEnv("APP_PORT", "8080"),
-			Environment: getEnv("ENVIRONMENT", "development"),
+			Port:             getEnv("APP_PORT", "8080"),
+			Environment:      getEnv("ENVIRONMENT", "development"),
+			AllowOrigins:     getEnv("CORS_ALLOW_ORIGINS", "*"),
+			AllowCredentials: getEnv("CORS_ALLOW_CREDENTIALS", "true"),
+			AllowHeaders:     getEnv("CORS_ALLOW_HEADERS", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Source-Type"),
+			AllowMethods:     getEnv("CORS_ALLOW_METHODS", "POST, GET, OPTIONS, PUT, DELETE"),
 		},
 	}
 }

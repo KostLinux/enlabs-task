@@ -12,17 +12,17 @@ import (
 
 // TransactionService handles business logic for transactions
 type TransactionService struct {
-	userRepo        repository.UserRepositoryInterface
-	balanceRepo     repository.BalanceRepositoryInterface
-	transactionRepo repository.TransactionRepositoryInterface
+	userRepo        repository.UserInterface
+	balanceRepo     repository.BalanceInterface
+	transactionRepo repository.TransactionInterface
 	balanceService  *BalanceService
 }
 
 // NewTransactionService creates a new TransactionService instance
 func NewTransactionService(
-	userRepo repository.UserRepositoryInterface,
-	balanceRepo repository.BalanceRepositoryInterface,
-	transactionRepo repository.TransactionRepositoryInterface,
+	userRepo repository.UserInterface,
+	balanceRepo repository.BalanceInterface,
+	transactionRepo repository.TransactionInterface,
 	balanceService *BalanceService,
 ) *TransactionService {
 	return &TransactionService{
@@ -34,13 +34,13 @@ func NewTransactionService(
 }
 
 // ProcessTransaction handles a new transaction request
-func (s *TransactionService) ProcessTransaction(
+func (service *TransactionService) ProcessTransaction(
 	userID uint64,
 	req *model.TransactionRequest,
 	sourceType string,
 ) (*model.TransactionResponse, error) {
 	// Validate user exists
-	exists, err := s.userRepo.Exists(userID)
+	exists, err := service.userRepo.Exists(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error checking user existence: %w", err)
 	}
@@ -50,14 +50,14 @@ func (s *TransactionService) ProcessTransaction(
 	}
 
 	// Check for duplicate transaction (idempotency)
-	existingTx, err := s.transactionRepo.FindByTransactionID(req.TransactionID)
+	existingTx, err := service.transactionRepo.FindByTransactionID(req.TransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("error checking transaction existence: %w", err)
 	}
 
 	if existingTx != nil {
 		// Transaction already processed, return the existing result
-		balance, err := s.balanceRepo.GetByUserID(userID)
+		balance, err := service.balanceRepo.GetByUserID(userID)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving balance: %w", err)
 		}
@@ -88,7 +88,7 @@ func (s *TransactionService) ProcessTransaction(
 	}
 
 	// Get current balance
-	balance, err := s.balanceRepo.GetByUserID(userID)
+	balance, err := service.balanceRepo.GetByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving balance: %w", err)
 	}
@@ -118,14 +118,14 @@ func (s *TransactionService) ProcessTransaction(
 	}
 
 	// Update balance
-	if err := s.balanceService.UpdateBalance(userID, newBalance); err != nil {
+	if err := service.balanceService.UpdateBalance(userID, newBalance); err != nil {
 		return nil, fmt.Errorf("error updating balance: %w", err)
 	}
 
 	// Save transaction
-	if err := s.transactionRepo.Create(transaction); err != nil {
+	if err := service.transactionRepo.Create(transaction); err != nil {
 		// Try to revert balance on error
-		_ = s.balanceService.UpdateBalance(userID, previousBalance)
+		_ = service.balanceService.UpdateBalance(userID, previousBalance)
 		return nil, fmt.Errorf("error saving transaction: %w", err)
 	}
 

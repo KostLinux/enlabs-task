@@ -10,14 +10,14 @@ import (
 
 // BalanceService handles business logic for user balances
 type BalanceService struct {
-	userRepo    repository.UserRepositoryInterface
-	balanceRepo repository.BalanceRepositoryInterface
+	userRepo    repository.UserInterface
+	balanceRepo repository.BalanceInterface
 }
 
 // NewBalanceService creates a new BalanceService instance
 func NewBalanceService(
-	userRepo repository.UserRepositoryInterface,
-	balanceRepo repository.BalanceRepositoryInterface,
+	userRepo repository.UserInterface,
+	balanceRepo repository.BalanceInterface,
 ) *BalanceService {
 	return &BalanceService{
 		userRepo:    userRepo,
@@ -26,9 +26,9 @@ func NewBalanceService(
 }
 
 // GetUserBalance retrieves a user's current balance
-func (s *BalanceService) GetUserBalance(userID uint64) (*model.BalanceResponse, error) {
+func (service *BalanceService) GetUserBalance(userID uint64) (*model.BalanceResponse, error) {
 	// Verify the user exists
-	exists, err := s.userRepo.Exists(userID)
+	exists, err := service.userRepo.Exists(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error checking user existence: %w", err)
 	}
@@ -38,7 +38,7 @@ func (s *BalanceService) GetUserBalance(userID uint64) (*model.BalanceResponse, 
 	}
 
 	// Get the user's balance
-	balance, err := s.balanceRepo.GetByUserID(userID)
+	balance, err := service.balanceRepo.GetByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving balance: %w", err)
 	}
@@ -54,10 +54,10 @@ func (s *BalanceService) GetUserBalance(userID uint64) (*model.BalanceResponse, 
 }
 
 // UpdateBalance updates a user's balance (used internally by transaction service)
-func (s *BalanceService) UpdateBalance(userID uint64, newAmount float64) error {
+func (service *BalanceService) UpdateBalance(userID uint64, newAmount float64) error {
 	if newAmount < 0 {
 		return fmt.Errorf("balance cannot be negative")
 	}
 
-	return s.balanceRepo.UpdateAmount(userID, newAmount)
+	return service.balanceRepo.UpdateAmount(userID, newAmount)
 }

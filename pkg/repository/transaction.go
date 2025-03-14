@@ -1,64 +1,44 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 
 	"enlabs-task/pkg/model"
 )
 
 // TransactionRepository handles operations on transaction data
 type TransactionRepository struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
 // NewTransactionRepository creates a new TransactionRepository instance
-func NewTransactionRepository(db *sqlx.DB) *TransactionRepository {
+func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 	return &TransactionRepository{db: db}
 }
 
 // Create saves a new transaction record
-func (r *TransactionRepository) Create(tx *model.Transaction) error {
-	query := `
-        INSERT INTO transactions 
-        (transaction_id, user_id, state, amount, source_type, previous_balance, new_balance)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, created_at
-    `
-
-	row := r.db.QueryRow(
-		query,
-		tx.TransactionID,
-		tx.UserID,
-		tx.State,
-		tx.Amount,
-		tx.SourceType,
-		tx.PreviousBalance,
-		tx.NewBalance,
-	)
-
-	if err := row.Scan(&tx.ID, &tx.CreatedAt); err != nil {
-		return fmt.Errorf("error creating transaction: %w", err)
+func (repository *TransactionRepository) Create(tx *model.Transaction) error {
+	result := repository.db.Create(tx)
+	if result.Error != nil {
+		return fmt.Errorf("error creating transaction: %w", result.Error)
 	}
 
 	return nil
 }
 
 // FindByTransactionID checks if a transaction with the given ID exists
-func (r *TransactionRepository) FindByTransactionID(transactionID string) (*model.Transaction, error) {
+func (repository *TransactionRepository) FindByTransactionID(transactionID string) (*model.Transaction, error) {
 	var tx model.Transaction
 
-	query := `SELECT * FROM transactions WHERE transaction_id = $1`
-	err := r.db.Get(&tx, query, transactionID)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // Transaction doesn't exist
+	result := repository.db.Where("transaction_id = ?", transactionID).First(&tx)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("transaction with ID %s not found", transactionID)
 		}
-		return nil, fmt.Errorf("error fetching transaction: %w", err)
+		return nil, fmt.Errorf("error fetching transaction: %w", result.Error)
 	}
 
 	return &tx, nil
