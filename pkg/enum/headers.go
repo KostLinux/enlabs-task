@@ -15,3 +15,8 @@ func (source SourceType) IsValid() bool {
 	}
 	return false
 }
+
+func ParseSourceType(header string) (SourceType, bool) {
+	source := SourceType(header)
+	return source, source.IsValid()
+}

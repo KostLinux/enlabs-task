@@ -40,8 +40,8 @@ func (c *TransactionController) Process(ctx *gin.Context) {
 		return
 	}
 
-	// Validate source type using the enum
-	sourceType, valid := enum.ValidateTransactionState(sourceTypeStr)
+	// Validate source type using the correct enum function
+	sourceType, valid := enum.ParseSourceType(sourceTypeStr)
 	if !valid {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Source-Type header"})
 		return

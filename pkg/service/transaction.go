@@ -53,9 +53,8 @@ func (service *TransactionService) ProcessTransaction(userID uint64, req *model.
 		return nil, fmt.Errorf("error checking transaction existence: %w", err)
 	}
 
-	// If transaction was already processed, return the existing result
 	if existingTx != nil {
-		// Get current balance to return in response
+		// If transaction exists, return the current balance state
 		balance, err := service.balanceRepo.GetByUserID(userID)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching balance: %w", err)

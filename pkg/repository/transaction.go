@@ -42,8 +42,10 @@ func (repository *TransactionRepository) FindByTransactionID(transactionID strin
 	result := repository.db.Where("transaction_id = ?", transactionID).First(&tx)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("transaction with ID %s not found", transactionID)
+			// Transaction doesn't exist - this is an expected case, not an error
+			return nil, nil
 		}
+		// Unexpected database error
 		return nil, fmt.Errorf("error fetching transaction: %w", result.Error)
 	}
 
