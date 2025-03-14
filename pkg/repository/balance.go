@@ -9,6 +9,11 @@ import (
 	"enlabs-task/pkg/model"
 )
 
+type BalanceInterface interface {
+	GetByUserID(userID uint64) (*model.Balance, error)
+	UpdateAmount(userID uint64, newAmount float64) error
+}
+
 // BalanceRepository handles operations on balance data
 type BalanceRepository struct {
 	db *gorm.DB

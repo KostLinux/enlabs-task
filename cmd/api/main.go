@@ -33,7 +33,7 @@ func main() {
 
 	// Initialize repository, service, and controller layers
 	repos := repository.NewRepositoryManager(db.DB)
-	services := service.NewServiceManager(repos)
+	services := service.NewServices(repos)
 	controllers := controller.NewController(services)
 
 	// Initialize router

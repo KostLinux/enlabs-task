@@ -9,6 +9,12 @@ import (
 	"enlabs-task/pkg/model"
 )
 
+// Transaction defines the transaction repository interface
+type TransactionInterface interface {
+	Create(tx *model.Transaction) error
+	FindByTransactionID(transactionID string) (*model.Transaction, error)
+}
+
 // TransactionRepository handles operations on transaction data
 type TransactionRepository struct {
 	db *gorm.DB

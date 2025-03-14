@@ -1,55 +1,46 @@
 package controller
 
 import (
+	"enlabs-task/pkg/service"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-
-	"enlabs-task/pkg/service"
 )
 
 // BalanceController handles balance-related requests
 type BalanceController struct {
-	balanceService service.BalanceServiceInterface
+	balanceService service.BalanceInterface
 }
 
-// NewBalanceController creates a new BalanceController instance
-func NewBalanceController(balanceService service.BalanceServiceInterface) *BalanceController {
+// NewBalanceController creates a new BalanceController
+func NewBalanceController(balanceService service.BalanceInterface) *BalanceController {
 	return &BalanceController{
 		balanceService: balanceService,
 	}
 }
 
 // GetBalance handles GET /user/{userId}/balance requests
-func (ctrl *BalanceController) GetBalance(ctx *gin.Context) {
-	userIDStr := ctx.Param("userId")
-
+func (c *BalanceController) Get(ctx *gin.Context) {
 	// Parse and validate user ID
+	userIDStr := ctx.Param("userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil || userID == 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid user ID. Must be a positive integer.",
-		})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
-	// Get user balance
-	balance, err := ctrl.balanceService.GetUserBalance(userID)
+	// Get balance
+	balance, err := c.balanceService.GetBalance(userID)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": err.Error(),
-			})
-			return
+		if err.Error() == "user not found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve balance"})
 		}
-
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve balance",
-		})
 		return
 	}
 
+	// Return balance
 	ctx.JSON(http.StatusOK, balance)
 }

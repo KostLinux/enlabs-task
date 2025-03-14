@@ -9,6 +9,11 @@ import (
 	"enlabs-task/pkg/model"
 )
 
+type UserInterface interface {
+	GetByID(id uint64) (*model.User, error)
+	Exists(id uint64) (bool, error)
+}
+
 // UserRepository handles operations on user data
 type UserRepository struct {
 	db *gorm.DB

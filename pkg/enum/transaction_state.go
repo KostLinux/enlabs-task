@@ -1,15 +1,15 @@
 package enum
 
 // TransactionState represents the state of a transaction
-type State string
+type TransactionState string
 
 const (
-	TransactionStateWin  State = "win"
-	TransactionStateLose State = "lose"
+	TransactionStateWin  TransactionState = "win"
+	TransactionStateLose TransactionState = "lose"
 )
 
 // IsValid checks if the transaction state is valid
-func (state State) IsTransactionValid() bool {
+func (state TransactionState) IsTransactionValid() bool {
 	switch state {
 	case TransactionStateWin, TransactionStateLose:
 		return true
@@ -18,7 +18,7 @@ func (state State) IsTransactionValid() bool {
 }
 
 // ParseTransactionState safely converts a string to a TransactionState
-func ParseTransactionState(transaction string) (State, bool) {
-	state := State(transaction)
+func ValidateTransactionState(value string) (TransactionState, bool) {
+	state := TransactionState(value)
 	return state, state.IsTransactionValid()
 }

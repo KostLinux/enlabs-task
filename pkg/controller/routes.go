@@ -11,8 +11,8 @@ import (
 func (ctrl *Controller) RegisterRoutes(router *gin.Engine) {
 	api := router.Group("/user")
 	{
-		api.GET("/:userId/balance", ctrl.Balance.GetBalance)
-		api.POST("/:userId/transaction", ctrl.Transaction.CreateTransaction)
+		api.GET("/:userId/balance", ctrl.Balance.Get)
+		api.POST("/:userId/transaction", ctrl.Transaction.Process)
 	}
 
 	// Add health check endpoint

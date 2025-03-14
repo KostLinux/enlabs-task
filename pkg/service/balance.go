@@ -2,62 +2,50 @@ package service
 
 import (
 	"fmt"
-	"math"
 
 	"enlabs-task/pkg/model"
 	"enlabs-task/pkg/repository"
 )
 
+// BalanceService defines the balance service interface for the controller
+type BalanceInterface interface {
+	GetBalance(userID uint64) (*model.BalanceResponse, error)
+}
+
 // BalanceService handles business logic for user balances
 type BalanceService struct {
-	userRepo    repository.UserInterface
 	balanceRepo repository.BalanceInterface
+	userRepo    repository.UserInterface
 }
 
 // NewBalanceService creates a new BalanceService instance
-func NewBalanceService(
-	userRepo repository.UserInterface,
-	balanceRepo repository.BalanceInterface,
-) *BalanceService {
+func NewBalanceService(balanceRepo repository.BalanceInterface, userRepo repository.UserInterface) *BalanceService {
 	return &BalanceService{
-		userRepo:    userRepo,
 		balanceRepo: balanceRepo,
+		userRepo:    userRepo,
 	}
 }
 
-// GetUserBalance retrieves a user's current balance
-func (service *BalanceService) GetUserBalance(userID uint64) (*model.BalanceResponse, error) {
-	// Verify the user exists
-	exists, err := service.userRepo.Exists(userID)
+// GetBalance retrieves a user's current balance
+func (s *BalanceService) GetBalance(userID uint64) (*model.BalanceResponse, error) {
+	// Check if user exists
+	exists, err := s.userRepo.Exists(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error checking user existence: %w", err)
 	}
-
 	if !exists {
-		return nil, fmt.Errorf("user with ID %d not found", userID)
+		return nil, fmt.Errorf("user not found")
 	}
 
-	// Get the user's balance
-	balance, err := service.balanceRepo.GetByUserID(userID)
+	// Get balance
+	balance, err := s.balanceRepo.GetByUserID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving balance: %w", err)
+		return nil, err
 	}
 
-	// Format the balance to 2 decimal places
-	roundedAmount := math.Round(balance.Amount*100) / 100
-	formattedBalance := fmt.Sprintf("%.2f", roundedAmount)
-
+	// Format response with balance rounded to 2 decimal places
 	return &model.BalanceResponse{
 		UserID:  userID,
-		Balance: formattedBalance,
+		Balance: fmt.Sprintf("%.2f", balance.Amount),
 	}, nil
-}
-
-// UpdateBalance updates a user's balance (used internally by transaction service)
-func (service *BalanceService) UpdateBalance(userID uint64, newAmount float64) error {
-	if newAmount < 0 {
-		return fmt.Errorf("balance cannot be negative")
-	}
-
-	return service.balanceRepo.UpdateAmount(userID, newAmount)
 }
