@@ -1,12 +1,16 @@
 package controller
 
 import (
+	httpstatus "enlabs-task/pkg/http"
 	"enlabs-task/pkg/service"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+type BalanceInterface interface {
+	Get(ctx *gin.Context)
+}
 
 // BalanceController handles balance-related requests
 type BalanceController struct {
@@ -21,26 +25,27 @@ func NewBalanceController(balanceService service.BalanceInterface) *BalanceContr
 }
 
 // GetBalance handles GET /user/{userId}/balance requests
-func (c *BalanceController) Get(ctx *gin.Context) {
+func (ctrl *BalanceController) Get(ctx *gin.Context) {
 	// Parse and validate user ID
 	userIDStr := ctx.Param("userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil || userID == 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		httpstatus.BadRequest(ctx, "Invalid user ID")
 		return
 	}
 
 	// Get balance
-	balance, err := c.balanceService.GetBalance(userID)
+	balance, err := ctrl.balanceService.GetBalance(userID)
 	if err != nil {
 		if err.Error() == "user not found" {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve balance"})
+			httpstatus.NotFound(ctx, "User not found")
+			return
 		}
+
+		httpstatus.InternalServerError(ctx, "Failed to retrieve balance")
 		return
 	}
 
 	// Return balance
-	ctx.JSON(http.StatusOK, balance)
+	httpstatus.OK(ctx, balance)
 }

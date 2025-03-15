@@ -1,8 +1,7 @@
 package controller
 
 import (
-	"net/http"
-	"time"
+	httpstatus "enlabs-task/pkg/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,11 +15,8 @@ func (ctrl *Controller) RegisterRoutes(router *gin.Engine) {
 	}
 
 	// Add health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "UP",
-			"time":   time.Now().Format(time.RFC3339),
-		})
+	router.GET("/health", func(ctx *gin.Context) {
+		httpstatus.OK(ctx, "UP")
 	})
 
 }

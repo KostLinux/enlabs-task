@@ -21,7 +21,9 @@ type BalanceRepository struct {
 
 // NewBalanceRepository creates a new BalanceRepository instance
 func NewBalanceRepository(db *gorm.DB) *BalanceRepository {
-	return &BalanceRepository{db: db}
+	return &BalanceRepository{
+		db: db,
+	}
 }
 
 // GetByUserID retrieves a user's balance

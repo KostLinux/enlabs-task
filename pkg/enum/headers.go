@@ -13,6 +13,7 @@ func (source SourceType) IsValid() bool {
 	case SourceTypeGame, SourceTypeServer, SourceTypePayment:
 		return true
 	}
+
 	return false
 }
 

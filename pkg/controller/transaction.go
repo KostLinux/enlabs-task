@@ -1,15 +1,19 @@
 package controller
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"enlabs-task/pkg/enum"
+	httpstatus "enlabs-task/pkg/http"
 	"enlabs-task/pkg/model"
 	"enlabs-task/pkg/service"
 )
+
+type TransactionInterface interface {
+	Process(ctx *gin.Context)
+}
 
 // TransactionController handles transaction-related requests
 type TransactionController struct {
@@ -24,54 +28,61 @@ func NewTransactionController(transactionService service.TransactionInterface) *
 }
 
 // ProcessTransaction handles POST /user/{userId}/transaction requests
-func (c *TransactionController) Process(ctx *gin.Context) {
+func (ctrl *TransactionController) Process(ctx *gin.Context) {
 	// Parse and validate user ID
 	userIDStr := ctx.Param("userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil || userID == 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		httpstatus.BadRequest(ctx, "Invalid user ID")
 		return
 	}
 
 	// Get and validate Source-Type header
 	sourceTypeStr := ctx.GetHeader("Source-Type")
 	if sourceTypeStr == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing Source-Type header"})
+		httpstatus.NotFound(ctx, "Source-Type header not found")
 		return
 	}
 
 	// Validate source type using the correct enum function
 	sourceType, valid := enum.ParseSourceType(sourceTypeStr)
 	if !valid {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Source-Type header"})
+		httpstatus.BadRequest(ctx, "Invalid Source-Type header")
 		return
 	}
 
 	// Parse request body
 	var req model.TransactionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		httpstatus.BadRequest(ctx, "Invalid request body. Please check docs and try again.")
 		return
 	}
 
+	type errorResponse struct {
+		statusHandler func(*gin.Context, string)
+		message       string
+	}
+
+	// Map errors to their appropriate HTTP responses
+	var transactionErrors = map[string]errorResponse{
+		"user not found":            {httpstatus.NotFound, "User not found"},
+		"invalid amount format":     {httpstatus.BadRequest, "Invalid amount format"},
+		"invalid transaction state": {httpstatus.BadRequest, "Invalid transaction state"},
+		"insufficient balance":      {httpstatus.UnprocessableEntity, "Insufficient balance"},
+	}
+
 	// Process transaction
-	response, err := c.transactionService.ProcessTransaction(userID, &req, string(sourceType))
+	response, err := ctrl.transactionService.ProcessTransaction(userID, &req, sourceType)
 	if err != nil {
-		switch err.Error() {
-		case "user not found":
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		case "invalid amount format":
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid amount format"})
-		case "invalid transaction state":
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transaction state"})
-		case "insufficient balance":
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Insufficient balance"})
-		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if errorResponse, ok := transactionErrors[err.Error()]; ok {
+			errorResponse.statusHandler(ctx, errorResponse.message)
+			return
 		}
+
+		httpstatus.InternalServerError(ctx, "Failed to process transaction. Please try again.")
 		return
 	}
 
 	// Return successful response
-	ctx.JSON(http.StatusOK, response)
+	httpstatus.OK(ctx, response)
 }

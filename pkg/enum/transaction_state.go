@@ -14,6 +14,7 @@ func (state TransactionState) IsTransactionValid() bool {
 	case TransactionStateWin, TransactionStateLose:
 		return true
 	}
+
 	return false
 }
 

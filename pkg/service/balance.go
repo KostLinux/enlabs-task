@@ -27,18 +27,18 @@ func NewBalanceService(balanceRepo repository.BalanceInterface, userRepo reposit
 }
 
 // GetBalance retrieves a user's current balance
-func (s *BalanceService) GetBalance(userID uint64) (*model.BalanceResponse, error) {
+func (service *BalanceService) GetBalance(userID uint64) (*model.BalanceResponse, error) {
 	// Check if user exists
-	exists, err := s.userRepo.Exists(userID)
+	ok, err := service.userRepo.Exists(userID)
 	if err != nil {
 		return nil, fmt.Errorf("error checking user existence: %w", err)
 	}
-	if !exists {
+	if !ok {
 		return nil, fmt.Errorf("user not found")
 	}
 
 	// Get balance
-	balance, err := s.balanceRepo.GetByUserID(userID)
+	balance, err := service.balanceRepo.GetByUserID(userID)
 	if err != nil {
 		return nil, err
 	}

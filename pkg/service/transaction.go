@@ -9,11 +9,14 @@ import (
 	"enlabs-task/pkg/enum"
 	"enlabs-task/pkg/model"
 	"enlabs-task/pkg/repository"
+	"enlabs-task/pkg/round"
+
+	"gorm.io/gorm"
 )
 
 // TransactionService defines the transaction service interface for the controller
 type TransactionInterface interface {
-	ProcessTransaction(userID uint64, req *model.TransactionRequest, sourceType string) (*model.TransactionResponse, error)
+	ProcessTransaction(userID uint64, req *model.TransactionRequest, sourceType enum.SourceType) (*model.TransactionResponse, error)
 }
 
 // TransactionService handles business logic for processing transactions
@@ -21,6 +24,7 @@ type TransactionService struct {
 	transactionRepo repository.TransactionInterface
 	balanceRepo     repository.BalanceInterface
 	userRepo        repository.UserInterface
+	db              *gorm.DB
 }
 
 // NewTransactionService creates a new TransactionService instance
@@ -28,110 +32,111 @@ func NewTransactionService(
 	transactionRepo repository.TransactionInterface,
 	balanceRepo repository.BalanceInterface,
 	userRepo repository.UserInterface,
+	db *gorm.DB,
 ) *TransactionService {
 	return &TransactionService{
 		transactionRepo: transactionRepo,
 		balanceRepo:     balanceRepo,
 		userRepo:        userRepo,
+		db:              db,
 	}
 }
 
 // ProcessTransaction handles the transaction processing logic
-func (service *TransactionService) ProcessTransaction(userID uint64, req *model.TransactionRequest, sourceType string) (*model.TransactionResponse, error) {
-	// Check if user exists
-	exists, err := service.userRepo.Exists(userID)
-	if err != nil {
-		return nil, fmt.Errorf("error checking user existence: %w", err)
-	}
-	if !exists {
-		return nil, errors.New("user not found")
-	}
+func (service *TransactionService) ProcessTransaction(userID uint64, req *model.TransactionRequest, sourceType enum.SourceType) (*model.TransactionResponse, error) {
+	var response *model.TransactionResponse
 
-	// Check if transaction already exists (idempotence)
-	existingTx, err := service.transactionRepo.FindByTransactionID(req.TransactionID)
-	if err != nil {
-		return nil, fmt.Errorf("error checking transaction existence: %w", err)
-	}
+	err := service.db.Transaction(func(tx *gorm.DB) error {
 
-	if existingTx != nil {
-		// If transaction exists, return the current balance state
-		balance, err := service.balanceRepo.GetByUserID(userID)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching balance: %w", err)
+		// Lock user balance row for update
+		balance := &model.Balance{}
+		if err := tx.Set("gorm:for_update", true).Where("user_id = ?", userID).First(balance).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("user not found")
+			}
+
+			return fmt.Errorf("error fetching balance: %w", err)
 		}
 
-		return &model.TransactionResponse{
+		// Check for existing transaction (idempotency) with locking
+		existingTx := &model.Transaction{}
+		err := tx.Set("gorm:for_update", true).
+			Where("transaction_id = ?", req.TransactionID).
+			First(existingTx).Error
+
+		// Handle database errors first
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("error checking transaction existence: %w", err)
+		}
+
+		// Return existing transaction if found
+		if err == nil {
+			response = &model.TransactionResponse{
+				Success:     true,
+				UserID:      userID,
+				Balance:     fmt.Sprintf("%.2f", balance.Amount),
+				Transaction: existingTx.TransactionID,
+				ProcessedAt: existingTx.CreatedAt.Format(time.RFC3339),
+			}
+
+			return nil
+		}
+
+		// Parse and validate amount
+		amount, err := strconv.ParseFloat(req.Amount, 64)
+		if err != nil {
+			return errors.New("invalid amount format")
+		}
+		amount = round.TwoDecimals(amount)
+
+		newBalance := balance.Amount
+		if req.State != "win" && balance.Amount < amount {
+			return errors.New("insufficient balance")
+		}
+
+		// Apply transaction amount if a win
+		if req.State == "win" {
+			newBalance += amount
+			return nil
+		}
+
+		// Apply transaction amount if not a win
+		newBalance -= amount
+
+		// Create transaction record
+		transaction := &model.Transaction{
+			TransactionID:   req.TransactionID,
+			UserID:          userID,
+			State:           req.State,
+			Amount:          amount,
+			SourceType:      string(sourceType),
+			PreviousBalance: balance.Amount,
+			NewBalance:      newBalance,
+		}
+
+		if err := tx.Create(transaction).Error; err != nil {
+			return fmt.Errorf("error creating transaction: %w", err)
+		}
+
+		// Update balance
+		if err := tx.Model(balance).Update("amount", newBalance).Error; err != nil {
+			return fmt.Errorf("error updating balance: %w", err)
+		}
+
+		// Set response before completing transaction
+		response = &model.TransactionResponse{
 			Success:     true,
 			UserID:      userID,
-			Balance:     fmt.Sprintf("%.2f", balance.Amount),
+			Balance:     fmt.Sprintf("%.2f", newBalance),
 			Transaction: req.TransactionID,
-			ProcessedAt: existingTx.CreatedAt.Format(time.RFC3339),
-		}, nil
-	}
-
-	// Parse transaction amount
-	amount, err := strconv.ParseFloat(req.Amount, 64)
-	if err != nil {
-		return nil, errors.New("invalid amount format")
-	}
-
-	// Round to 2 decimal places
-	amount = float64(int64(amount*100)) / 100
-
-	// Validate state
-	state := enum.TransactionState(req.State)
-	if !state.IsTransactionValid() {
-		return nil, errors.New("invalid transaction state")
-	}
-
-	// Get current balance
-	currentBalance, err := service.balanceRepo.GetByUserID(userID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching balance: %w", err)
-	}
-
-	// Calculate new balance based on transaction state
-	var newBalance float64
-	if state == enum.TransactionStateWin {
-		newBalance = currentBalance.Amount + amount
-	} else {
-		// Check if sufficient balance for 'lose' transaction
-		if currentBalance.Amount < amount {
-			return nil, errors.New("insufficient balance")
+			ProcessedAt: transaction.CreatedAt.Format(time.RFC3339),
 		}
-		newBalance = currentBalance.Amount - amount
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
-	// Round the new balance to 2 decimal places
-	newBalance = float64(int64(newBalance*100)) / 100
-
-	// Create transaction record
-	tx := &model.Transaction{
-		TransactionID:   req.TransactionID,
-		UserID:          userID,
-		State:           string(state),
-		Amount:          amount,
-		SourceType:      sourceType,
-		PreviousBalance: currentBalance.Amount,
-		NewBalance:      newBalance,
-	}
-
-	// Save transaction
-	if err := service.transactionRepo.Create(tx); err != nil {
-		return nil, fmt.Errorf("error creating transaction: %w", err)
-	}
-
-	// Update user balance
-	if err := service.balanceRepo.UpdateAmount(userID, newBalance); err != nil {
-		return nil, fmt.Errorf("error updating balance: %w", err)
-	}
-
-	// Return response
-	return &model.TransactionResponse{
-		Success:     true,
-		UserID:      userID,
-		Balance:     fmt.Sprintf("%.2f", newBalance),
-		Transaction: req.TransactionID,
-		ProcessedAt: tx.CreatedAt.Format(time.RFC3339),
-	}, nil
+	return response, nil
 }

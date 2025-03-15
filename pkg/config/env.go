@@ -52,6 +52,7 @@ func getIntEnv(key string, defaultValue int) int {
 			return intVal
 		}
 	}
+
 	return defaultValue
 }
 
@@ -61,5 +62,6 @@ func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
 			return duration
 		}
 	}
+
 	return defaultValue
 }

@@ -6,8 +6,8 @@ import (
 
 // Controller holds all controllers
 type Controller struct {
-	Balance     *BalanceController
-	Transaction *TransactionController
+	Balance     BalanceInterface
+	Transaction TransactionInterface
 }
 
 // NewController creates a new Controller with initialized controllers
