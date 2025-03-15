@@ -11,7 +11,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller with initialized controllers
-func NewController(services *service.ServiceManager) *Controller {
+func New(services *service.ServiceManager) *Controller {
 	return &Controller{
 		Balance:     NewBalanceController(services.Balance),
 		Transaction: NewTransactionController(services.Transaction),

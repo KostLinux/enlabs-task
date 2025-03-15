@@ -1,0 +1,238 @@
+definitions:
+  model.BalanceResponse:
+    properties:
+      balance:
+        example: "100.00"
+        type: string
+      userId:
+        example: 12345
+        type: integer
+    type: object
+  model.TransactionRequest:
+    properties:
+      amount:
+        example: "10.50"
+        type: string
+      state:
+        enum:
+        - win
+        - lose
+        example: win
+        type: string
+      transactionId:
+        example: tx_abc123def456
+        type: string
+    required:
+    - amount
+    - state
+    - transactionId
+    type: object
+  model.TransactionResponse:
+    properties:
+      balance:
+        example: "125.75"
+        type: string
+      processedAt:
+        example: "2025-03-14T14:30:45Z"
+        type: string
+      success:
+        example: true
+        type: boolean
+      transactionId:
+        example: tx_abc123def456
+        type: string
+      userId:
+        example: 42
+        type: integer
+    type: object
+  swagger.BalanceErrorResponse:
+    properties:
+      code:
+        example: "500"
+        type: string
+      message:
+        example: Failed to retrieve balance
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.InsufficientBalanceError:
+    properties:
+      code:
+        example: "422"
+        type: string
+      message:
+        example: Insufficient balance
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.InvalidAmountError:
+    properties:
+      code:
+        example: "400"
+        type: string
+      message:
+        example: Invalid amount format
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.InvalidSourceTypeError:
+    properties:
+      code:
+        example: "400"
+        type: string
+      message:
+        example: Invalid Source-Type header
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.InvalidTransactionStateError:
+    properties:
+      code:
+        example: "400"
+        type: string
+      message:
+        example: Invalid transaction state
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.InvalidUserIDError:
+    properties:
+      code:
+        example: "400"
+        type: string
+      message:
+        example: Invalid user ID
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.MissingSourceTypeError:
+    properties:
+      code:
+        example: "404"
+        type: string
+      message:
+        example: Source-Type header not found
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  swagger.UserNotFoundError:
+    properties:
+      code:
+        example: "404"
+        type: string
+      message:
+        example: User not found
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: API for managing user balances and processing transactions.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Gambling API
+  version: "1.0"
+paths:
+  /user/{userId}/balance:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the current balance for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful balance retrieval
+          schema:
+            $ref: '#/definitions/model.BalanceResponse'
+        "400":
+          description: Invalid user ID provided
+          schema:
+            $ref: '#/definitions/swagger.InvalidUserIDError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/swagger.UserNotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/swagger.BalanceErrorResponse'
+      summary: Get user balance
+      tags:
+      - Balance
+  /user/{userId}/transaction:
+    post:
+      consumes:
+      - application/json
+      description: Process a win/lose transaction for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: userId
+        required: true
+        type: integer
+      - description: Transaction source
+        enum:
+        - game
+        - server
+        - payment
+        in: header
+        name: Source-Type
+        required: true
+        type: string
+      - description: Transaction details
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/model.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.TransactionResponse'
+        "400":
+          description: Invalid transaction state
+          schema:
+            $ref: '#/definitions/swagger.InvalidTransactionStateError'
+        "404":
+          description: Missing source type
+          schema:
+            $ref: '#/definitions/swagger.MissingSourceTypeError'
+        "422":
+          description: Insufficient balance
+          schema:
+            $ref: '#/definitions/swagger.InsufficientBalanceError'
+      summary: Create transaction
+      tags:
+      - Transaction
+swagger: "2.0"

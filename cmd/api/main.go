@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"enlabs-task/pkg/config"
 	"enlabs-task/pkg/controller"
@@ -12,7 +14,19 @@ import (
 	"enlabs-task/pkg/middleware"
 	"enlabs-task/pkg/repository"
 	"enlabs-task/pkg/service"
+
+	_ "enlabs-task/docs" // Required for swagger docs
 )
+
+//	@title			Gambling API
+//	@version		1.0
+//	@description	API for managing user balances and processing transactions.
+
+//	@contact.name	API Support
+//	@contact.email	support@example.com
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
 func main() {
 	// Load environment variables from .env file if it exists
@@ -32,9 +46,9 @@ func main() {
 	defer db.Close()
 
 	// Initialize repository, service, and controller layers
-	repos := repository.NewRepositoryManager(db.DB)
-	services := service.NewServices(repos, db.DB)
-	controllers := controller.NewController(services)
+	repos := repository.New(db.DB)
+	services := service.New(repos, db.DB)
+	controllers := controller.New(services)
 
 	// Initialize router
 	router := gin.New()
@@ -43,6 +57,15 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(cfg))
+
+	// Add swagger documentation route
+	router.Static("/docs", "./docs")
+
+	// Add swagger documentation route
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/docs", func(ctx *gin.Context) {
+		ctx.File("/docs/index.html")
+	})
 
 	// Register routes
 	controllers.RegisterRoutes(router)

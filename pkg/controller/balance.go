@@ -2,6 +2,7 @@ package controller
 
 import (
 	httpstatus "enlabs-task/pkg/http"
+	"enlabs-task/pkg/model/swagger"
 	"enlabs-task/pkg/service"
 	"strconv"
 
@@ -24,7 +25,20 @@ func NewBalanceController(balanceService service.BalanceInterface) *BalanceContr
 	}
 }
 
-// GetBalance handles GET /user/{userId}/balance requests
+// Fix issue with swagger not being used
+var _ = swagger.BalanceErrorResponse{}
+
+// @Summary		Get user balance
+// @Description	Retrieves the current balance for a specific user
+// @Tags			Balance
+// @Accept			json
+// @Produce		json
+// @Param			userId	path		int								true	"User ID"	minimum(1)
+// @Success		200		{object}	model.BalanceResponse			"Successful balance retrieval"
+// @Failure		400		{object}	swagger.InvalidUserIDError		"Invalid user ID provided"
+// @Failure		404		{object}	swagger.UserNotFoundError		"User not found"
+// @Failure		500		{object}	swagger.BalanceErrorResponse	"Internal server error"
+// @Router			/user/{userId}/balance [get]
 func (ctrl *BalanceController) Get(ctx *gin.Context) {
 	// Parse and validate user ID
 	userIDStr := ctx.Param("userId")

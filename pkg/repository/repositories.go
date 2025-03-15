@@ -12,7 +12,7 @@ type RepositoryManager struct {
 }
 
 // NewRepositoryManager creates a new repository manager
-func NewRepositoryManager(db *gorm.DB) *RepositoryManager {
+func New(db *gorm.DB) *RepositoryManager {
 	return &RepositoryManager{
 		User:        NewUserRepository(db),
 		Balance:     NewBalanceRepository(db),

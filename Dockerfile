@@ -32,9 +32,10 @@ RUN if [ -z "$TARGETOS" ]; then \
 FROM alpine:3.17
 
 RUN apk add --no-cache ca-certificates tzdata make && \
-    mkdir -p /app/migrations
+    mkdir -p /app/migrations /app/templates
 
 # Copy the API binaries
+COPY --from=builder /app/docs /app/docs
 COPY --from=builder /app/api /app/api
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /go/bin/goose /usr/local/bin/goose

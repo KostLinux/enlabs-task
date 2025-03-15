@@ -13,7 +13,7 @@ type ServiceManager struct {
 }
 
 // NewServices creates a new service manager with all services
-func NewServices(repos *repository.RepositoryManager, db *gorm.DB) *ServiceManager {
+func New(repos *repository.RepositoryManager, db *gorm.DB) *ServiceManager {
 	return &ServiceManager{
 		Balance:     NewBalanceService(repos.Balance, repos.User),
 		Transaction: NewTransactionService(repos.Transaction, repos.Balance, repos.User, db),

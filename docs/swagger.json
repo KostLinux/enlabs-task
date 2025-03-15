@@ -1,0 +1,343 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API for managing user balances and processing transactions.",
+        "title": "Gambling API",
+        "contact": {
+            "name": "API Support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "paths": {
+        "/user/{userId}/balance": {
+            "get": {
+                "description": "Retrieves the current balance for a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Balance"
+                ],
+                "summary": "Get user balance",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful balance retrieval",
+                        "schema": {
+                            "$ref": "#/definitions/model.BalanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID provided",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.InvalidUserIDError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.UserNotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.BalanceErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{userId}/transaction": {
+            "post": {
+                "description": "Process a win/lose transaction for a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transaction"
+                ],
+                "summary": "Create transaction",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "game",
+                            "server",
+                            "payment"
+                        ],
+                        "type": "string",
+                        "description": "Transaction source",
+                        "name": "Source-Type",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction details",
+                        "name": "transaction",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.TransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.TransactionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid transaction state",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.InvalidTransactionStateError"
+                        }
+                    },
+                    "404": {
+                        "description": "Missing source type",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.MissingSourceTypeError"
+                        }
+                    },
+                    "422": {
+                        "description": "Insufficient balance",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.InsufficientBalanceError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.BalanceResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "string",
+                    "example": "100.00"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 12345
+                }
+            }
+        },
+        "model.TransactionRequest": {
+            "type": "object",
+            "required": [
+                "amount",
+                "state",
+                "transactionId"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "string",
+                    "example": "10.50"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "win",
+                        "lose"
+                    ],
+                    "example": "win"
+                },
+                "transactionId": {
+                    "type": "string",
+                    "example": "tx_abc123def456"
+                }
+            }
+        },
+        "model.TransactionResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "string",
+                    "example": "125.75"
+                },
+                "processedAt": {
+                    "type": "string",
+                    "example": "2025-03-14T14:30:45Z"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "transactionId": {
+                    "type": "string",
+                    "example": "tx_abc123def456"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "swagger.BalanceErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "500"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Failed to retrieve balance"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.InsufficientBalanceError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "422"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Insufficient balance"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.InvalidAmountError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "400"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid amount format"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.InvalidSourceTypeError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "400"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid Source-Type header"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.InvalidTransactionStateError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "400"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid transaction state"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.InvalidUserIDError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "400"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid user ID"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.MissingSourceTypeError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "404"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Source-Type header not found"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "swagger.UserNotFoundError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "404"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "User not found"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        }
+    }
+}

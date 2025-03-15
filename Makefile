@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := run
-.PHONY: run migrate-up migrate-down migrate-create test migrate-schema migrate-dev migrate-prod
+.PHONY: run migrate-up migrate-down migrate-create test migrate-schema migrate-dev migrate-prod swagger docs
 
 GOOSE_DRIVER := postgres
 GOOSE_DBSTRING := 'user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} dbname=${DB_NAME} sslmode=${DB_SSLMODE}'
@@ -56,4 +56,14 @@ validate: test
 	go vet ./...
 	golangci-lint run ./...
 	gosec ./...
-	
+
+install-swag-deps:
+	go get -u github.com/swaggo/swag/cmd/swag
+
+swagger:
+	swag fmt
+	swag init -g cmd/api/main.go -o ./docs
+
+docs: swagger
+	redocly lint docs/swagger.json
+	redocly build-docs docs/swagger.json -o docs/index.html

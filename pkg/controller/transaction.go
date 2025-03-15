@@ -3,6 +3,8 @@ package controller
 import (
 	"strconv"
 
+	"enlabs-task/pkg/model/swagger"
+
 	"github.com/gin-gonic/gin"
 
 	"enlabs-task/pkg/enum"
@@ -10,6 +12,9 @@ import (
 	"enlabs-task/pkg/model"
 	"enlabs-task/pkg/service"
 )
+
+// Fix issue with swagger not being used
+var _ = swagger.InvalidUserIDError{}
 
 type TransactionInterface interface {
 	Process(ctx *gin.Context)
@@ -27,7 +32,23 @@ func NewTransactionController(transactionService service.TransactionInterface) *
 	}
 }
 
-// ProcessTransaction handles POST /user/{userId}/transaction requests
+// @Summary		Create transaction
+// @Description	Process a win/lose transaction for a specific user
+// @Tags			Transaction
+// @Accept			json
+// @Produce		json
+// @Param			userId		path		int							true	"User ID"				minimum(1)
+// @Param			Source-Type	header		string						true	"Transaction source"	Enums(game,server,payment)
+// @Param			transaction	body		model.TransactionRequest	true	"Transaction details"
+// @Success		200			{object}	model.TransactionResponse
+// @Failure		400			{object}	swagger.InvalidUserIDError				"Invalid user ID"
+// @Failure		400			{object}	swagger.InvalidSourceTypeError			"Invalid source type"
+// @Failure		400			{object}	swagger.InvalidAmountError				"Invalid amount"
+// @Failure		400			{object}	swagger.InvalidTransactionStateError	"Invalid transaction state"
+// @Failure		404			{object}	swagger.UserNotFoundError				"User not found"
+// @Failure		404			{object}	swagger.MissingSourceTypeError			"Missing source type"
+// @Failure		422			{object}	swagger.InsufficientBalanceError		"Insufficient balance"
+// @Router			/user/{userId}/transaction [post]
 func (ctrl *TransactionController) Process(ctx *gin.Context) {
 	// Parse and validate user ID
 	userIDStr := ctx.Param("userId")
