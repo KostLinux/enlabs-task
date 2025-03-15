@@ -88,6 +88,12 @@ Response should have 2 required fields in `json` format (if you need other field
 
 ## Getting Started
 
+### Docker
+
+```bash
+docker-compose up
+```
+
 ### Migrations
 
 To run the migrations, you need to have [Goose]() installed on your machine. You can install it by running the following command:
@@ -103,3 +109,8 @@ make migrate-create name=add_test_data dir=development
 make migrate-create name=add_prod_config dir=production
 ```
 
+**NOTE** You need to connect to database container to run migrations
+
+## Docs
+
+Documentations is available under `/docs` route.
