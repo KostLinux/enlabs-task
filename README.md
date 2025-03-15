@@ -114,3 +114,21 @@ make migrate-create name=add_prod_config dir=production
 ## Docs
 
 Documentations is available under `/docs` route.
+
+## Postman Collection
+
+Postman collection can be imported from [public workspace](https://www.postman.com/planetary-flare-511612/enlabs-testtask/collection/0npklil/gambling-api?action=share&creator=30504559)
+
+## Load Testing
+
+Load test can be done via K6
+
+1. Install K6
+```
+brew install k6
+```
+
+2. Run the test
+```
+k6 run load-test.js
+```

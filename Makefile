@@ -1,5 +1,15 @@
 .DEFAULT_GOAL := run
-.PHONY: run migrate-up migrate-down migrate-create test migrate-schema migrate-dev migrate-prod swagger docs
+.PHONY: run 
+	migrate-up 
+	migrate-down 
+	migrate-create 
+	test 
+	migrate-schema
+	migrate-dev 
+	migrate-prod 
+	swagger 
+	docs 
+	load-test
 
 GOOSE_DRIVER := postgres
 GOOSE_DBSTRING := 'user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} dbname=${DB_NAME} sslmode=${DB_SSLMODE}'
